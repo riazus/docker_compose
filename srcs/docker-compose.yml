@@ -1,0 +1,71 @@
+version: "3.3"
+services:
+  nginx:
+    build: ./requirements/nginx
+    image: nginx
+    container_name: my-nginx
+    ports:
+      - "443:443"
+
+    restart: unless-stopped
+    volumes:
+      - wp-volume:/var/www/
+    networks:
+    - quarante_deux
+
+
+  mariadb:
+    build:
+      context: ./requirements/mariadb/
+      args:
+        DB_PASS: ${DB_PASS}
+        ROOT_PASS: ${ROOT_PASS}
+    image: mariadb
+    container_name: my-db
+    expose:
+      - "3306"
+    restart: unless-stopped
+    networks:
+      - quarante_deux
+    volumes:
+      - db-volume:/var/db
+
+  wordpress:
+    build:
+      context: ./requirements/wordpress/
+      args:
+        DB_PASS: ${DB_PASS}
+        WP_PASS: ${WP_PASS}
+    image: wordpress
+    container_name: my-wp
+    depends_on: 
+      - mariadb
+    environment:
+      - RACK_ENV=development
+      - SHOW=true
+    expose:
+      - "9000"
+    restart: unless-stopped
+    volumes:
+      - wp-volume:/var/www/
+    networks:
+      - quarante_deux
+
+networks:
+    quarante_deux:
+
+volumes:
+  wp-volume:
+    driver: local
+    driver_opts:
+      type: vfs
+      device: /home/jannabel/data/www
+      o: bind
+  db-volume:
+    driver: local
+    driver_opts:
+      type: vfs
+      device: /home/jannabel/data/db
+      o: bind
+
+
